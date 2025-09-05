@@ -25,6 +25,14 @@ body, html {
   text-align: center;
 }
 
+.section-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  margin-bottom: 2rem;
+  letter-spacing: 2px;
+  text-align: right;   
+}
 .intro { background: rgba(30, 30, 30, 0); }
 .projects { background: rgba(50, 50, 50, 0); }
 .contact { background: rgba(80, 80, 80, 0); }
@@ -55,25 +63,18 @@ body, html {
 .intro-content .animated-gradient-text.gradient-medium {
   font-family: 'Poppins', sans-serif;
   font-size: 2rem;
-  margin-bottom: 1.5rem;  /* space before button */
+  margin-bottom: 1.5rem;  
 }
 
 /*---------------------------------------------------- #### project content #### ---------------------------------------------------- */
 .projects-section {
   padding: 4rem 2rem;
-  padding-left: 20%;
-  text-align: right;
-  max-width: 800px;
-  margin: 0 auto;
+  padding-right: 5%; 
+  text-align: right;    
+  max-width: 1000px;
+  margin-left: auto;   
 }
 
-.projects-title {
-  font-size: 2.5rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  margin-bottom: 2rem;
-  letter-spacing: 2px;
-}
 
 .projects-list {
   display: flex;
@@ -81,31 +82,167 @@ body, html {
   gap: 1rem; 
 }
 
+.projects-list a {
+  text-decoration: none; 
+  color: inherit;        
+}
+
+
 .project-item {
   display: flex;
   align-items: center;
-  justify-content: flex-end; 
+  justify-content: flex-end;
   font-size: 1.2rem;
+  gap: 0.5rem;
+}
+
+.project-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem; 
+  transition: transform 0.15s cubic-bezier(0.76, 0, 0.3, 1);
+}
+
+.project-item:hover .project-left {
+  transform: translateX(-25px); 
 }
 
 .project-name {
-  font-size: 1rem
-  ;
+  font-size: 1rem;
   font-weight: 500;
   color: white;
 }
 
 .project-dot {
   font-size: 2rem;
-  margin: 0 0.5rem;
   color: hotpink;
   font-weight: bold;
 }
 
-.project-desc {
-  font-size: 1rem;
-  color: hotpink;
+.project-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem; 
 }
+
+.project-pill {
+  height: 20px;
+  width: 0;
+  background: linear-gradient(90deg, #ee2c7a 0%, #fc7566 100%);
+  border-top-left-radius: 20px;
+  border-bottom-left-radius: 20px;
+  transition: width 0.15s cubic-bezier(0.76, 0, 0.1, 1);
+}
+
+.project-item:hover .project-pill {
+  width: 60px;
+}
+
+/*---------------------------------------------------- #### skills content #### ---------------------------------------------------- */
+.skills-section {
+  padding: 4rem 2rem;
+  padding-right: 5%; 
+  text-align: right;    
+  max-width: 1000px;
+  margin-left: auto;   
+}
+
+
+
+.skills-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  align-items: flex-end; 
+}
+
+
+.skill-card {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(14px);
+  border-radius: 20px;
+  padding: 2rem;
+  width: 400px;
+}
+
+.skill-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  margin-top: -.6rem;
+  justify-self: left;
+}
+
+.skill-items {
+  display: flex;
+  gap: 1rem;
+  justify-content: left;
+  flex-wrap: wrap;
+}
+
+.skill-items span {
+  padding: 0.5rem 1.2rem;
+  border-radius: 32px;
+  background: rgba(32, 32, 32, 0.547); 
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.25); 
+  color: #ffffff;
+  font-weight: 500;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.3); 
+  transition: all 0.3s ease;
+}
+
+
+.skill-items img {
+  width: auto;   
+  height: 40px;
+  object-fit: contain;
+  padding: 0.5px; 
+}
+
+.skill-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.skill-icon img {
+  height: 40px;
+  width: auto;
+  object-fit: contain;
+  transition: transform 0.2s ease;
+}
+
+.skill-icon:hover img {
+  transform: scale(1.1);
+}
+
+.tooltip {
+  position: absolute;
+  bottom: 120%; /*  tooltip loc */
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(43, 43, 43, 0.85);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.skill-icon:hover .tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-4px);
+}
+
 
 /*---------------------------------------------------- #### text effect #### ---------------------------------------------------- */
 
@@ -130,35 +267,88 @@ body, html {
 /* size variants */
 .gradient-large { font-size: 2.5rem; }
 .gradient-medium { font-size: 1.5rem; }
-.gradient-small { font-size: .8rem; }
+.gradient-small { font-size: .9rem; }
 
 /* color themes (with matching stroke colors) (thank you alvin) */
 .gradient-black {
   background-image: url("https://www.alaintai.com/assets/images/7b322b5742df1d83.svg");
-  -webkit-text-stroke: 1px #000;
+  -webkit-text-stroke: .5px #000;
 }
 
 .gradient-pink {
   background-image: url("https://www.alaintai.com/assets/images/20f6001ea1b18772.svg");
-  -webkit-text-stroke: 1px #ff2a7f; /* pink stroke */
+  -webkit-text-stroke: .5px #ff2a7f;
 }
 
 .gradient-purple {
   background-image: url("https://www.alaintai.com/assets/images/1d7550c1632244bb.svg");
-  -webkit-text-stroke: 1px #6a0dad; /* purple stroke */
+  -webkit-text-stroke: .5px #6a0dad;
 }
 
 .gradient-blue {
   background-image: url("https://www.alaintai.com/assets/images/19c6f48582def5d2.svg");
-  -webkit-text-stroke: 1px #0059ff; /* blue stroke */
+  -webkit-text-stroke: .5px #0059ff; 
 }
 
 .gradient-cyan {
   background-image: url("https://www.alaintai.com/assets/images/43176578bae2b17d.svg");
-  -webkit-text-stroke: 1px #00d4d4; /* cyan stroke */
+  -webkit-text-stroke: .5px #00d4d4;
 }
 
-/*---------------------------------------------------- #### contact button #### ---------------------------------------------------- */
+/*---------------------------------------------------- #### contact section #### ---------------------------------------------------- */
+
+.contact-section {
+  padding: 4rem 2rem;
+  padding-right: 5%; 
+  text-align: right;    
+  max-width: 1000px;
+  margin-left: auto; 
+}
+.contact-card {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-radius: 20px;
+  padding: 2rem;
+  max-width: 25rem;
+  text-align: left;
+  color: white;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  margin-left: auto;
+  margin-bottom: 2rem;
+}
+
+.contact-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  margin-top: -.6rem;
+  justify-self: left;
+}
+
+
+.contact-intro {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+
+.contact-info {
+  margin-top: 1.5rem;
+  font-size: 1rem;
+}
+
+.contact-info a {
+  color: #00d4d4;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.contact-info a:hover {
+  color: #ff66aa;
+}
+
 
 .contact-btn {
   padding: 0.8rem 1.5rem;
@@ -193,4 +383,39 @@ body, html {
   );
   border: 1px solid rgba(255, 255, 255, 0.6);
   transform: scale(0.95);
+}
+
+/*---------------------------------------------------- #### sidebar links #### ---------------------------------------------------- */
+.sidebar-links {
+  position: fixed;
+  top: 50%;
+  left: 1rem;
+  transform: translateY(-50%);
+  z-index: 1000; 
+}
+
+.sidebar-links ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-links li {
+  margin: 1rem 0;
+  writing-mode: vertical-rl; 
+  /* transform: rotate(180deg);  */
+}
+
+.sidebar-links a {
+  color: white;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.9rem;
+  letter-spacing: 1px;
+  text-decoration: none;
+  transition: color 0.3s ease, text-shadow 0.3s ease;
+}
+
+.sidebar-links a:hover {
+  color: #ee2c7a; 
+  text-shadow: 0 0 5px #ee2c7a;
 }

@@ -83,7 +83,7 @@ function ScrollCamera() {
   const { camera } = useThree()
   useFrame(() => {
     const scrollY = window.scrollY
-    const targetZ = 1 + scrollY * 0.0045 ///0.0045
+    const targetZ = 1 + scrollY * 0.003 ///0.0045
     // smooth transition 
     camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetZ, 0.10)
   })
@@ -190,6 +190,8 @@ export default function App() {
           color={"#ffddaa"}
           target-position={[2.5, -1, 1]}   // right lamp target
           castShadow
+          shadow-mapSize-width={512}
+          shadow-mapSize-height={512}
         />
 
         {/* desk lamp , left */}
@@ -202,21 +204,23 @@ export default function App() {
           color={"#ffddaa"}
           target-position={[-4, -1, 1]}  // left lamp target
           castShadow
+          shadow-mapSize-width={512}
+          shadow-mapSize-height={512}
         />
 
         {/* -------------------------------------------------- #### HELPERS #### -------------------------------------------------- */}
 
         <Helpers 
-          pointLightRef={pointLightRef} 
-          rightLampRef={rightLampRef} 
-          leftLampRef={leftLampRef} 
+          // pointLightRef={pointLightRef} 
+          // rightLampRef={rightLampRef} 
+          // leftLampRef={leftLampRef} 
         />
 
         {/* -------------------------------------------------- #### REALISM / ENVIRONMENT #### -------------------------------------------------- */}
         <Environment preset="night" />
 
         {/* scene + camera effects */}
-        <DustParticles count={1200} />
+        <DustParticles count={800} />
         <Scene />
         <ScrollCamera />
         <MouseParallax /> 
@@ -225,7 +229,7 @@ export default function App() {
         <EffectComposer>
           <Bloom intensity={0.5} luminanceThreshold={.1} luminanceSmoothing={0.1} />
           {/* <SSAO radius={0.1} intensity={20} /> */}
-          <DepthOfField focusDistance={0.02} focalLength={0.03} bokehScale={1.1} />
+          {/* <DepthOfField focusDistance={0.02} focalLength={0.03} bokehScale={1.1} /> */}
         </EffectComposer>
       </Canvas>
 
@@ -249,29 +253,151 @@ export default function App() {
         </section>
 
         <section className="projects-section">
-          <h1 className="projects-title">
+          <h1 className="section-title">
             <AnimatedText size="large" >MY PROJECTS</AnimatedText>
           </h1>
 
           <div className="projects-list">
-            <div className="project-item">
-              <span className="project-name">Project 1</span>
-              <span className="project-dot">•</span>
-              <AnimatedText size="small" color="pink">
-                lorem ipsum
-              </AnimatedText>
+            <a href="https://www.google.com" target="_blank" rel="noopener noreferrer">
+              <div className="project-item">
+                <div className="project-left">
+                  <span className="project-name">Project 1</span>
+                  <span className="project-dot">•</span>
+                </div>
+                <div className="project-right">
+                  <AnimatedText size="small" color="pink">
+                    lorem ipsum
+                  </AnimatedText>
+                  <div className="project-pill"></div>
+                </div>
+              </div>
+            </a>
+
+
+            {/* repeat for future projects!!!!! */}
+          </div>
+        </section>
+        <section className="skills-section">
+          <h1 className="section-title">
+            <AnimatedText size="large">SKILLS & TECHNOLOGIES</AnimatedText>
+          </h1>
+
+          <div className="skills-list">
+            <div className="skill-card">
+              <h2 className="skill-title">DEVELOPMENT</h2>
+              <div className="skill-items">
+                <div className="skill-icon">
+                  <img src="/icons/javascript-original.svg" alt="JavaScript" />
+                  <span className="tooltip">JavaScript</span>
+                </div>
+
+                <div className="skill-icon">
+                  <img src="/icons/python-original.svg" alt="Python" />
+                  <span className="tooltip">Python</span>
+                </div>
+
+                <div className="skill-icon">
+                  <img src="/icons/java-original.svg" alt="Java" />
+                  <span className="tooltip">Java</span>
+                </div>
+
+                <div className="skill-icon">
+                  <img src="/icons/html5-original-wordmark.svg" alt="HTML" />
+                  <span className="tooltip">HTML5</span>
+                </div>
+
+                <div className="skill-icon">
+                  <img src="/icons/css3-original-wordmark.svg" alt="CSS" />
+                  <span className="tooltip">CSS3</span>
+                </div>
+
+                <div className="skill-icon">
+                  <img src="/icons/react-original.svg" alt="React" />
+                  <span className="tooltip">React</span>
+                </div>
+
+                <div className="skill-icon">
+                  <img src="/icons/nodejs-original-wordmark.svg" alt="Node.js" />
+                  <span className="tooltip">Node.js</span>
+                </div>
+                <div className="skill-icon">
+                  <img src="/icons/tailwindcss-plain.svg" alt="Tailwind" />
+                  <span className="tooltip">Tailwind</span>
+                </div>
+                <div className="skill-icon">
+                  <img src="/icons/threejs-original-wordmark.svg" alt="Three.js" />
+                  <span className="tooltip">Three.js</span>
+                </div>
+                <div className="skill-icon">
+                  <img src="/icons/tensorflow-original.svg" alt="TensorFlow" />
+                  <span className="tooltip">TensorFlow</span>
+                </div>
+                <div className="skill-icon">
+                  <img src="/icons/mongodb-original-wordmark.svg" alt="MongoDB" />
+                  <span className="tooltip">MongoDB</span>
+                </div>
+                <div className="skill-icon">
+                  <img src="/icons/mysql-original-wordmark.svg" alt="MySQL" />
+                  <span className="tooltip">MySQL</span>
+                </div>
+                <div className="skill-icon">
+                  <img src="/icons/c-original.svg" alt="C" />
+                  <span className="tooltip">C</span>
+                </div>
+                <div className="skill-icon">
+                  <img src="/icons/cplusplus-original.svg" alt="C++" />
+                  <span className="tooltip">C++</span>
+                </div>
+              </div>
             </div>
 
-            {/* repeat for future projects */}
+            <div className="skill-card">
+              <h2 className="skill-title">DESIGN</h2>
+              <div className="skill-items">
+                <div className="skill-icon">
+                  <img src="/icons/figma-original.svg" alt="Figma" />
+                  <span className="tooltip">Figma</span>
+                </div>
+                <div className="skill-icon">
+                  <img src="/icons/blender-original.svg" alt="Blender" />
+                  <span className="tooltip">Blender</span>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
             
-        <section className="panel contact">
-          <h1>Contact</h1>
-          <p>Email: danjokuu@gmail.com</p>
+        <section className="contact-section">
+            <h1 className="section-title">
+              <AnimatedText size="large">HI, I'M <span>DANIEL</span></AnimatedText>
+            </h1>
+          <div className="contact-card">
+            <p className="contact-intro">
+              HI my name is Daniel  
+            </p>
+          </div>
+          
+          <div className="contact-card">
+            <AnimatedText size="medium"> LETS CONNECT!</AnimatedText>
+
+            <div className="contact-info">
+              <p>📧 <a href="mailto:danjokuu@gmail.com">danjokuu@gmail.com</a></p>
+              <p>🌐 <a href="https://github.com" target="_blank">GitHub</a> | <a href="https://linkedin.com" target="_blank">LinkedIn</a></p>
+            </div>
+          </div>
         </section>
+
       </div>
+      {/* -------------------------------------------------- #### SIDEBAR CONTACT LINKS #### -------------------------------------------------- */}
+      <div className="sidebar-links">
+        <ul>
+          <li><a href="https://linkedin.com" target="_blank" rel="noopener noreferrer">LinkedIn</a></li>
+          <li><a href="https://github.com" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+          <li><a href="mailto:danjokuu@gmail.com">Email</a></li>
+        </ul>
+      </div>
+
     </>
   )
 }
