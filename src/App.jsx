@@ -1,36 +1,54 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
-import { useRef, useEffect } from "react"
+import { useRef, useEffect, useState } from "react"
 import { useGLTF, Environment, useHelper } from "@react-three/drei"
 import * as THREE from "three"
 import { EffectComposer, Bloom, DepthOfField} from "@react-three/postprocessing"
 import AnimatedText from "./AnimatedText.jsx"
 
 // -------------------------------------------------- #### SCENE #### --------------------------------------------------
-function Scene() {
-  const { scene, nodes } = useGLTF("/room(new)-opt.glb")
+function Scene({ currentProject }) {
+  const { scene, nodes } = useGLTF("/room-opt.glb")
 
   useEffect(() => {
-    // first monitor
+    const loader = new THREE.TextureLoader()
+
+    // first monitor = dynamic texture
     if (nodes.screen) {
+      const texture = loader.load(`/screens/${currentProject}.jpg`)
+      texture.encoding = THREE.sRGBEncoding
+      texture.flipY = false   // prevent upside-down image
+
+      texture.wrapS = THREE.ClampToEdgeWrapping
+      texture.wrapT = THREE.ClampToEdgeWrapping
+      texture.minFilter = THREE.LinearFilter
+      texture.magFilter = THREE.LinearFilter
+
+      // adjust scale/offset if needed to fit UVs
+      texture.repeat.set(1, 1)    // scale (X, Y)
+      texture.offset.set(0, 0)    // shift (X, Y)
+
       nodes.screen.material = new THREE.MeshStandardMaterial({
-        color: "#111",
-        emissive: "#00ffcc",   
-        emissiveIntensity: 2,
+        map: texture,
+        emissive: new THREE.Color("#abcaee"), 
+        emissiveMap: texture,                 
+        emissiveIntensity: .9,               
+        toneMapped: false,                    
       })
     }
 
-    // second monitor
+
+    // second monitor = static glow
     if (nodes.second_screen) {
       nodes.second_screen.material = new THREE.MeshStandardMaterial({
         color: "#111",
-        emissive: "#ff66aa",    
+        emissive: "#ff66aa",
         emissiveIntensity: 5,
       })
     }
-  }, [nodes])
+  }, [nodes, currentProject])
 
   return (
-    <primitive 
+    <primitive
       object={scene}
       position={[0, 0, 0]}
       rotation={[0, THREE.MathUtils.degToRad(270), 0]}
@@ -39,6 +57,8 @@ function Scene() {
     />
   )
 }
+
+
 
 // -------------------------------------------------- #### PARTICLES #### --------------------------------------------------
 function DustParticles({ count = 500 }) {
@@ -146,6 +166,8 @@ export default function App() {
   const pointLightRef = useRef()
   const rightLampRef = useRef()
   const leftLampRef = useRef()
+  const [currentProject, setCurrentProject] = useState("default") 
+
 
   return (
     <>
@@ -174,7 +196,7 @@ export default function App() {
         <pointLight
           ref={pointLightRef}
           position={[-.8, .5,1.2]}   
-          intensity={5}
+          intensity={.1}
           distance={2.5}
           color={"#ffffffff"}
           castShadow
@@ -221,13 +243,13 @@ export default function App() {
 
         {/* scene + camera effects */}
         <DustParticles count={800} />
-        <Scene />
+        <Scene currentProject={currentProject} />
         <ScrollCamera />
         <MouseParallax /> 
 
         {/* -------------------------------------------------- #### POSTPROCESSING (CINEMATIC EFFECTS) #### -------------------------------------------------- */}
         <EffectComposer>
-          <Bloom intensity={0.5} luminanceThreshold={.1} luminanceSmoothing={0.1} />
+          <Bloom intensity={2.1} luminanceThreshold={.2} luminanceSmoothing={0.1} />
           {/* <SSAO radius={0.1} intensity={20} /> */}
           {/* <DepthOfField focusDistance={0.02} focalLength={0.03} bokehScale={1.1} /> */}
         </EffectComposer>
@@ -259,7 +281,11 @@ export default function App() {
 
           <div className="projects-list">
             <a href="https://www.google.com" target="_blank" rel="noopener noreferrer">
-              <div className="project-item">
+              <div 
+                className="project-item"
+                onMouseEnter={() => setCurrentProject("project1")}
+                onMouseLeave={() => setCurrentProject("default")}
+              >
                 <div className="project-left">
                   <span className="project-name">Project 1</span>
                   <span className="project-dot">•</span>
@@ -403,4 +429,4 @@ export default function App() {
 }
 
 // -------------------------------------------------- #### PRELOAD #### --------------------------------------------------
-useGLTF.preload("/room(new)-opt.glb")
+useGLTF.preload("/room-opt.glb")
