@@ -1,9 +1,11 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import { useRef, useEffect, useState } from "react"
-import { useGLTF, Environment, useHelper } from "@react-three/drei"
+import { useGLTF, Environment, useHelper, AdaptiveDpr} from "@react-three/drei"
 import * as THREE from "three"
 import { EffectComposer, Bloom, DepthOfField} from "@react-three/postprocessing"
-import AnimatedText from "./AnimatedText.jsx"
+import AnimatedText from "./components/AnimatedText.jsx"
+import FuzzyText from "./components/FuzzyText.jsx"
+import { FaLinkedin, FaGithub, FaEnvelope } from "react-icons/fa"
 
 // -------------------------------------------------- #### SCENE #### --------------------------------------------------
 function Scene({ currentProject }) {
@@ -23,29 +25,70 @@ function Scene({ currentProject }) {
       texture.minFilter = THREE.LinearFilter
       texture.magFilter = THREE.LinearFilter
 
-      // adjust scale/offset if needed to fit UVs
+      // adjust scale/offset 
       texture.repeat.set(1, 1)    // scale (X, Y)
       texture.offset.set(0, 0)    // shift (X, Y)
+
+      // CRT scanline texture
+      const scanlineTex = loader.load("/screens/scanlines.png")
+      scanlineTex.wrapS = THREE.RepeatWrapping
+      scanlineTex.wrapT = THREE.RepeatWrapping
+      scanlineTex.repeat.set(3,3) // tile scanlines
+      // scanlineTex.generateMipmaps = false
+      // scanlineTex.minFilter = THREE.LinearFilter
+      // scanlineTex.magFilter = THREE.NearestFilter
 
       nodes.screen.material = new THREE.MeshStandardMaterial({
         map: texture,
         emissive: new THREE.Color("#abcaee"), 
         emissiveMap: texture,                 
         emissiveIntensity: .9,               
-        toneMapped: false,                    
+        toneMapped: false,     
+        
+        transparent: false,
+        opacity: 1,
+        roughness: 0.05,
+        metalness: 0.2,
+        clearcoat: 1.0,
+        clearcoatRoughness: 0.05,
+        reflectivity: 0.9,
+        transmission: 0.9,
+        thickness: 0.5,
+
+        alphaMap: scanlineTex,   // overlay scanlines
+        alphaTest: 0.2,         
+        combine: THREE.MixOperation
+
       })
     }
 
 
-    // second monitor = static glow
+    // second monitor = looped video
     if (nodes.second_screen) {
-      nodes.second_screen.material = new THREE.MeshStandardMaterial({
-        color: "#111",
-        emissive: "#ff66aa",
-        emissiveIntensity: 5,
-      })
-    }
-  }, [nodes, currentProject])
+    const video = document.createElement("video")
+    video.src = "/videos/tv-static.mp4" // 
+    video.crossOrigin = "Anonymous"
+    video.loop = true
+    video.muted = true
+    video.play()
+
+    const videoTexture = new THREE.VideoTexture(video)
+    videoTexture.encoding = THREE.sRGBEncoding
+    videoTexture.minFilter = THREE.LinearFilter
+    videoTexture.magFilter = THREE.LinearFilter
+    videoTexture.wrapS = THREE.ClampToEdgeWrapping
+    videoTexture.wrapT = THREE.ClampToEdgeWrapping
+    videoTexture.rotation = Math.PI / 2
+
+    nodes.second_screen.material = new THREE.MeshStandardMaterial({
+      map: videoTexture,
+      emissive: new THREE.Color("#ffffff"),
+      emissiveMap: videoTexture,
+      emissiveIntensity: 1.0,
+      toneMapped: false,
+    })
+  }
+}, [nodes, currentProject])
 
   return (
     <primitive
@@ -58,6 +101,63 @@ function Scene({ currentProject }) {
   )
 }
 
+
+// -------------------------------------------------- #### LIGHTS #### --------------------------------------------------
+function SceneLights() {
+  const pointLightRef = useRef()
+  const rightLampRef = useRef()
+  const leftLampRef = useRef()
+
+  useEffect(() => {
+    if (rightLampRef.current) {
+      rightLampRef.current.target.position.set(2.5, -1, 1)
+      rightLampRef.current.target.updateMatrixWorld()
+    }
+    if (leftLampRef.current) {
+      leftLampRef.current.target.position.set(-4, -1, 1)
+      leftLampRef.current.target.updateMatrixWorld()
+    }
+  }, [])
+
+  return (
+    <>
+      <ambientLight intensity={0.01} />
+      <pointLight 
+        ref={pointLightRef} 
+        position={[-0.8, 0.5, 1.2]} 
+        intensity={0.1} 
+        distance={2.5} 
+        color={"#ffffff"} 
+        castShadow
+        shadow-mapSize-width={256}
+        shadow-mapSize-height={256}
+      />
+      <spotLight 
+        ref={rightLampRef} 
+        position={[3, 0.5, 1]} 
+        angle={0.9} 
+        penumbra={0.8} 
+        intensity={30} 
+        color={"#ffddaa"} 
+        castShadow
+        shadow-mapSize-width={256}
+        shadow-mapSize-height={256}
+      />
+      <spotLight 
+        ref={leftLampRef} 
+        position={[-6, 6, 1]} 
+        angle={0.3} 
+        penumbra={2} 
+        intensity={150} 
+        color={"#ffddaa"} 
+        castShadow
+        shadow-mapSize-width={256}
+        shadow-mapSize-height={256}
+      />
+    </>
+
+  )
+}
 
 
 // -------------------------------------------------- #### PARTICLES #### --------------------------------------------------
@@ -97,7 +197,7 @@ function DustParticles({ count = 500 }) {
 }
 
 
-// -------------------------------------------------- #### SCROLL CAMERA #### --------------------------------------------------
+// -------------------------------------------------- #### SCROLL/CAMERA #### --------------------------------------------------
 // smooth scroll-driven zoom
 function ScrollCamera() {
   const { camera } = useThree()
@@ -108,6 +208,49 @@ function ScrollCamera() {
     camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetZ, 0.10)
   })
   return null
+}
+
+function ScrollIndicator() {
+  const [hidden, setHidden] = useState(false)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 50) {  // if scrolled down more than 50px, hide it     
+        setHidden(true)
+      } else {
+        setHidden(false)
+      }
+    }
+
+    window.addEventListener("scroll", handleScroll)
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
+
+  return (
+    <div className={`scroll-indicator ${hidden ? "hidden" : ""}`}>
+      <p>Start scrolling to explore</p>
+      <svg
+        className="bounce"
+        width="36"
+        height="36"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M18 33a15 15 0 1 0 0-30 15 15 0 0 0 0 30Z"
+          stroke="#000"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="m12 18 6 6 6-6M18 12v12"
+          stroke="#000"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </div>
+  )
 }
 
 // -------------------------------------------------- #### MOUSE PARALLAX #### --------------------------------------------------
@@ -172,6 +315,10 @@ export default function App() {
   return (
     <>
       <Canvas
+        dpr={[1]} // lower resolution
+        onCreated={({ gl }) => {
+          gl.setPixelRatio(0.75) //  resolution
+        }} 
         shadows
         style={{
           height: "100vh",
@@ -189,66 +336,29 @@ export default function App() {
           outputEncoding: THREE.sRGBEncoding 
         }}
       >
+        <AdaptiveDpr pixelated />
+
         {/* -------------------------------------------------- #### LIGHTING #### -------------------------------------------------- */}
-        <ambientLight intensity={0.01} />
+        <SceneLights/>
 
-        {/* CRT monitor glow */}
-        <pointLight
-          ref={pointLightRef}
-          position={[-.8, .5,1.2]}   
-          intensity={.1}
-          distance={2.5}
-          color={"#ffffffff"}
-          castShadow
-        />
-
-        {/* desk lamp , right */}
-        <spotLight
-          ref={rightLampRef}
-          position={[3, 0.5, 1]}
-          angle={0.9}
-          penumbra={0.8}
-          intensity={30}
-          color={"#ffddaa"}
-          target-position={[2.5, -1, 1]}   // right lamp target
-          castShadow
-          shadow-mapSize-width={512}
-          shadow-mapSize-height={512}
-        />
-
-        {/* desk lamp , left */}
-        <spotLight
-          ref={leftLampRef}
-          position={[-6, 6, 1]}
-          angle={0.3}
-          penumbra={2}
-          intensity={100}
-          color={"#ffddaa"}
-          target-position={[-4, -1, 1]}  // left lamp target
-          castShadow
-          shadow-mapSize-width={512}
-          shadow-mapSize-height={512}
-        />
 
         {/* -------------------------------------------------- #### HELPERS #### -------------------------------------------------- */}
 
         <Helpers 
-          // pointLightRef={pointLightRef} 
-          // rightLampRef={rightLampRef} 
-          // leftLampRef={leftLampRef} 
+          pointLightRef={pointLightRef} 
+          rightLampRef={rightLampRef} 
+          leftLampRef={leftLampRef} 
         />
 
         {/* -------------------------------------------------- #### REALISM / ENVIRONMENT #### -------------------------------------------------- */}
         <Environment preset="night" />
-
-        {/* scene + camera effects */}
         <DustParticles count={800} />
         <Scene currentProject={currentProject} />
         <ScrollCamera />
         <MouseParallax /> 
 
         {/* -------------------------------------------------- #### POSTPROCESSING (CINEMATIC EFFECTS) #### -------------------------------------------------- */}
-        <EffectComposer>
+        <EffectComposer multisampling={0} resolutionScale={0.25}>
           <Bloom intensity={2.1} luminanceThreshold={.2} luminanceSmoothing={0.1} />
           {/* <SSAO radius={0.1} intensity={20} /> */}
           {/* <DepthOfField focusDistance={0.02} focalLength={0.03} bokehScale={1.1} /> */}
@@ -259,18 +369,40 @@ export default function App() {
       <div className="scroll-container">
         <section className="panel intro">
           <div className="intro-content">
-            <h1> Daniel Njoku</h1>
-            <AnimatedText size="large" block>
-              Full Stack Developer
-            </AnimatedText>
-            <button
+            <h1 className="intro-name"> 
+              <FuzzyText
+                fontSize="clamp(3rem, 8vw, 8rem)"
+                fontFamily="'Poppins', sans-serif"
+                fontWeight={900}
+                color="#000000"
+                baseIntensity={0.18}
+                hoverIntensity={0.5}
+              >
+                DANIEL NJOKU
+              </FuzzyText>
+            </h1>
+            <h2 className="intro-subtitle">
+              <FuzzyText
+                fontSize="clamp(1.5rem, 4vw, 4rem)"
+                fontFamily="'FigtreeExtraBoldItalic', sans-serif"
+                fontWeight={900}
+                color="#000000"
+                baseIntensity={0.18}
+                hoverIntensity={0.5}
+              >
+                Fullstack Developer
+              </FuzzyText>
+            </h2>
+            
+            {/* <button
               className="contact-btn"
               onClick={() =>
-                document.querySelector(".panel.contact")?.scrollIntoView({ behavior: "smooth" })
+                document.querySelector(".contact-section")?.scrollIntoView({ behavior: "smooth" })
               }
             >
               Contact Me
-            </button>
+            </button> */}
+            <ScrollIndicator />
           </div>
         </section>
 
@@ -280,19 +412,38 @@ export default function App() {
           </h1>
 
           <div className="projects-list">
-            <a href="https://www.google.com" target="_blank" rel="noopener noreferrer">
+            <div 
+              className="project-item"
+              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              onMouseEnter={() => setCurrentProject("project1")}
+              onMouseLeave={() => setCurrentProject("default")}
+              style={{ cursor: "pointer" }}  
+            >
+              <div className="project-left">
+                <span className="project-name">Portfolio</span>
+                <span className="project-dot">•</span>
+              </div>
+              <div className="project-right">
+                <AnimatedText size="small" color="pink">
+                  Three.js Portfolio Website
+                </AnimatedText>
+                <div className="project-pill"></div>
+              </div>
+            </div>
+
+            <a href="https://drive.google.com/file/d/1Q4sOsHHvHX4kSAmTJYEDIb6T9_TpwgBL/view?usp=sharing" target="_blank" rel="noopener noreferrer">
               <div 
                 className="project-item"
                 onMouseEnter={() => setCurrentProject("project1")}
                 onMouseLeave={() => setCurrentProject("default")}
               >
                 <div className="project-left">
-                  <span className="project-name">Project 1</span>
+                  <span className="project-name">Music Genre Identifier</span>
                   <span className="project-dot">•</span>
                 </div>
                 <div className="project-right">
                   <AnimatedText size="small" color="pink">
-                    lorem ipsum
+                    Detect music genre using nueral networks
                   </AnimatedText>
                   <div className="project-pill"></div>
                 </div>
@@ -388,6 +539,22 @@ export default function App() {
                   <img src="/icons/blender-original.svg" alt="Blender" />
                   <span className="tooltip">Blender</span>
                 </div>
+                <div className="skill-icon">
+                  <img src="/icons/vscode.svg" alt="VSCode" />
+                  <span className="tooltip">VSCode</span>
+                </div>
+                <div className="skill-icon">
+                  <img src="/icons/adobe-photoshop-icon.svg" alt="Photoshop" />
+                  <span className="tooltip">Photoshop</span>
+                </div>
+                <div className="skill-icon">
+                  <img src="/icons/designer.svg" alt="Substance Designer" />
+                  <span className="tooltip">Substance Designer</span>
+                </div>
+                <div className="skill-icon">
+                  <img src="/icons/painter.svg" alt="Substance Painter" />
+                  <span className="tooltip">Substance Painter</span>
+                </div>
               </div>
             </div>
           </div>
@@ -405,7 +572,7 @@ export default function App() {
           </div>
           
           <div className="contact-card">
-            <AnimatedText size="medium"> LETS CONNECT!</AnimatedText>
+            <h2 className="skill-title">LET'S CONNECT!</h2>
 
             <div className="contact-info">
               <p>📧 <a href="mailto:danjokuu@gmail.com">danjokuu@gmail.com</a></p>
@@ -418,9 +585,21 @@ export default function App() {
       {/* -------------------------------------------------- #### SIDEBAR CONTACT LINKS #### -------------------------------------------------- */}
       <div className="sidebar-links">
         <ul>
-          <li><a href="https://linkedin.com" target="_blank" rel="noopener noreferrer">LinkedIn</a></li>
-          <li><a href="https://github.com" target="_blank" rel="noopener noreferrer">GitHub</a></li>
-          <li><a href="mailto:danjokuu@gmail.com">Email</a></li>
+          <li>
+            <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer">
+              <FaLinkedin style={{ marginRight: "8px" }} /> LinkedIn
+            </a>
+          </li>
+          <li>
+            <a href="https://github.com" target="_blank" rel="noopener noreferrer">
+              <FaGithub style={{ marginRight: "8px" }} /> GitHub
+            </a>
+          </li>
+          <li>
+            <a href="mailto:danjokuu@gmail.com">
+              <FaEnvelope style={{ marginRight: "8px" }} /> Email
+            </a>
+          </li>
         </ul>
       </div>
 
