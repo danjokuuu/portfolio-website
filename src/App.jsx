@@ -268,13 +268,15 @@ function ScrollIndicator() {
       >
         <path
           d="M18 33a15 15 0 1 0 0-30 15 15 0 0 0 0 30Z"
-          stroke="#000"
+          stroke="currentColor"
+          strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
         <path
           d="m12 18 6 6 6-6M18 12v12"
-          stroke="#000"
+          stroke="currentColor"
+          strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
