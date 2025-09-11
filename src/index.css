@@ -58,8 +58,8 @@ body, html {
 }
 
 .intro-content {
-  display: inline-block;     /* shrink to name’s width */
-  text-align: center;          /* align subtitle inside */
+  display: inline-block;    
+  text-align: center;       
 }
 
 .intro-name {
@@ -229,6 +229,7 @@ body, html {
 }
 
 .skill-title {
+  color: #000;
   font-size: 1.5rem;
   font-family: 'Poppins', sans-serif;
   font-weight: 600;
@@ -321,6 +322,7 @@ body, html {
   text-shadow: rgba(0, 0, 0, 0.5) 0px 0px 15px;
   animation: moving-gradient 15s linear infinite alternate;
   display: inline-block;
+  vertical-align: baseline;
 }
 
 @keyframes moving-gradient {
@@ -393,7 +395,7 @@ body, html {
 
 .contact-intro {
   font-family: 'Ubuntu', sans-serif;
-  font-size: 1.1rem;
+  font-size: 1rem;
   line-height: 1.6;
   margin-bottom: 1.5rem;
 }

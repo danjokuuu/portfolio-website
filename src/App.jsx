@@ -1,15 +1,22 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
-import { useRef, useEffect, useState } from "react"
-import { useGLTF, Environment, useHelper, AdaptiveDpr} from "@react-three/drei"
+import { useRef, useEffect, useState, Suspense } from "react"
+import { useGLTF, Environment, AdaptiveDpr, Preload, useTexture} from "@react-three/drei"
 import * as THREE from "three"
-import { EffectComposer, Bloom, DepthOfField} from "@react-three/postprocessing"
+import { EffectComposer, Bloom} from "@react-three/postprocessing"
 import AnimatedText from "./components/AnimatedText.jsx"
 import FuzzyText from "./components/FuzzyText.jsx"
 import { FaLinkedin, FaGithub, FaEnvelope } from "react-icons/fa"
+import Loader from "./components/Loader.jsx"
 
 // -------------------------------------------------- #### SCENE #### --------------------------------------------------
+
+useTexture.preload("/screens/portfolio.jpg")
+useTexture.preload("/screens/music-genre-identifier.jpg")
+useTexture.preload("/screens/default.jpg")
+
 function Scene({ currentProject }) {
   const { scene, nodes } = useGLTF("/room-opt.glb")
+  const materialRef = useRef() // store monitor material so we don't recreate endlessly
 
   useEffect(() => {
     const loader = new THREE.TextureLoader()
@@ -17,7 +24,7 @@ function Scene({ currentProject }) {
     // first monitor = dynamic texture
     if (nodes.screen) {
       const texture = loader.load(`/screens/${currentProject}.jpg`)
-      texture.encoding = THREE.sRGBEncoding
+      texture.colorSpace = THREE.SRGBColorSpace // replaces encoding
       texture.flipY = false   // prevent upside-down image
 
       texture.wrapS = THREE.ClampToEdgeWrapping
@@ -33,62 +40,84 @@ function Scene({ currentProject }) {
       const scanlineTex = loader.load("/screens/scanlines.png")
       scanlineTex.wrapS = THREE.RepeatWrapping
       scanlineTex.wrapT = THREE.RepeatWrapping
-      scanlineTex.repeat.set(3,3) // tile scanlines
+      scanlineTex.repeat.set(3, 3) // tile scanlines
       // scanlineTex.generateMipmaps = false
       // scanlineTex.minFilter = THREE.LinearFilter
       // scanlineTex.magFilter = THREE.NearestFilter
 
-      nodes.screen.material = new THREE.MeshStandardMaterial({
-        map: texture,
-        emissive: new THREE.Color("#abcaee"), 
-        emissiveMap: texture,                 
-        emissiveIntensity: .9,               
-        toneMapped: false,     
-        
-        transparent: false,
-        opacity: 1,
-        roughness: 0.05,
-        metalness: 0.2,
-        clearcoat: 1.0,
-        clearcoatRoughness: 0.05,
-        reflectivity: 0.9,
-        transmission: 0.9,
-        thickness: 0.5,
+      if (!materialRef.current) {
+        // build once with MeshPhysicalMaterial
+        materialRef.current = new THREE.MeshPhysicalMaterial({
+          map: texture,
+          emissive: new THREE.Color("#abcaee"), 
+          emissiveMap: texture,                 
+          emissiveIntensity: 1.5,               
+          toneMapped: false,     
+          
+          transparent: false,
+          opacity: 1,
+          roughness: 0.05,
+          metalness: 0.2,
+          clearcoat: 1.0,
+          clearcoatRoughness: 0.05,
+          transmission: 0.9,
+          thickness: 0.5,
 
-        alphaMap: scanlineTex,   // overlay scanlines
-        alphaTest: 0.2,         
-        combine: THREE.MixOperation
+          alphaMap: scanlineTex,   // overlay scanlines
+          alphaTest: 0.2,         
+          combine: THREE.MixOperation
+        })
+        nodes.screen.material = materialRef.current
+      } else {
+        // swap maps without rebuilding
+        const m = materialRef.current
+        m.map?.dispose()
+        m.emissiveMap?.dispose()
+        m.alphaMap = scanlineTex
+        m.map = m.emissiveMap = texture
+        m.needsUpdate = true
+      }
+    }
 
+    // second monitor = looped video
+    let video, videoTexture
+    if (nodes.second_screen) {
+      video = document.createElement("video")
+      video.src = "/videos/tv-static.mp4" // 
+      video.crossOrigin = "Anonymous"
+      video.loop = true
+      video.muted = true
+      video.playsInline = true
+      video.play()
+
+      videoTexture = new THREE.VideoTexture(video)
+      videoTexture.colorSpace = THREE.SRGBColorSpace
+      videoTexture.minFilter = THREE.LinearFilter
+      videoTexture.magFilter = THREE.LinearFilter
+      videoTexture.wrapS = THREE.ClampToEdgeWrapping
+      videoTexture.wrapT = THREE.ClampToEdgeWrapping
+      videoTexture.rotation = Math.PI / 2
+
+      nodes.second_screen.material = new THREE.MeshStandardMaterial({
+        map: videoTexture,
+        emissive: new THREE.Color("#ffffff"),
+        emissiveMap: videoTexture,
+        emissiveIntensity: 2,
+        toneMapped: false,
       })
     }
 
-
-    // second monitor = looped video
-    if (nodes.second_screen) {
-    const video = document.createElement("video")
-    video.src = "/videos/tv-static.mp4" // 
-    video.crossOrigin = "Anonymous"
-    video.loop = true
-    video.muted = true
-    video.play()
-
-    const videoTexture = new THREE.VideoTexture(video)
-    videoTexture.encoding = THREE.sRGBEncoding
-    videoTexture.minFilter = THREE.LinearFilter
-    videoTexture.magFilter = THREE.LinearFilter
-    videoTexture.wrapS = THREE.ClampToEdgeWrapping
-    videoTexture.wrapT = THREE.ClampToEdgeWrapping
-    videoTexture.rotation = Math.PI / 2
-
-    nodes.second_screen.material = new THREE.MeshStandardMaterial({
-      map: videoTexture,
-      emissive: new THREE.Color("#ffffff"),
-      emissiveMap: videoTexture,
-      emissiveIntensity: 1.0,
-      toneMapped: false,
-    })
-  }
-}, [nodes, currentProject])
+    // cleanup on unmount / project change
+    return () => {
+      if (video) {
+        video.pause()
+        video.src = ""
+        video.load()
+      }
+      if (videoTexture) videoTexture.dispose()
+      if (nodes.second_screen?.material) nodes.second_screen.material.dispose()
+    }
+  }, [nodes, currentProject])
 
   return (
     <primitive
@@ -100,6 +129,7 @@ function Scene({ currentProject }) {
     />
   )
 }
+
 
 
 // -------------------------------------------------- #### LIGHTS #### --------------------------------------------------
@@ -203,9 +233,9 @@ function ScrollCamera() {
   const { camera } = useThree()
   useFrame(() => {
     const scrollY = window.scrollY
-    const targetZ = 1 + scrollY * 0.003 ///0.0045
+    const targetZ = 1 + scrollY * 0.002 ///0.0045
     // smooth transition 
-    camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetZ, 0.10)
+    camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetZ, 0.30)
   })
   return null
 }
@@ -271,9 +301,9 @@ function MouseParallax() { // disable this later for mobile devices!!
 
   useFrame(() => {
     // subtle position offset for parallax translation
-    const targetX = mouse.current.x * 0.2 - 1   // shift left/right
-    const targetY = mouse.current.y * 0.15 + 0.5 // shift up/down
-    const targetZ = camera.position.z + mouse.current.y * 0.05 // slight forward/back
+    const targetX = mouse.current.x * 0.25 - 1   // shift left/right
+    const targetY = mouse.current.y * 0.2 + 0.5 // shift up/down
+    const targetZ = camera.position.z + mouse.current.y * 0.01 // slight forward/back
 
     // lerp camera toward target position
     camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetX, 0.1)
@@ -288,21 +318,20 @@ function MouseParallax() { // disable this later for mobile devices!!
 
 
 // -------------------------------------------------- #### HELPERS #### --------------------------------------------------
-function Helpers({ pointLightRef, rightLampRef, leftLampRef }) {
-  useHelper(pointLightRef, THREE.PointLightHelper, 0.5, "red")
-  useHelper(rightLampRef, THREE.SpotLightHelper, "yellow")
-  useHelper(leftLampRef, THREE.SpotLightHelper, "orange")
+// function Helpers({ pointLightRef, rightLampRef, leftLampRef }) {
+//   useHelper(pointLightRef, THREE.PointLightHelper, 0.5, "red")
+//   useHelper(rightLampRef, THREE.SpotLightHelper, "yellow")
+//   useHelper(leftLampRef, THREE.SpotLightHelper, "orange")
 
-  // axes helper in center
-  const { scene } = useThree()
-  useEffect(() => {
-    const axes = new THREE.AxesHelper(2) 
-    scene.add(axes)
-    return () => scene.remove(axes)
-  }, [scene])
+//   const { scene } = useThree()
+//   useEffect(() => {
+//     const axes = new THREE.AxesHelper(2) 
+//     scene.add(axes)
+//     return () => scene.remove(axes)
+//   }, [scene])
 
-  return null
-}
+//   return null
+// }
 
 // -------------------------------------------------- #### APP COMPONENT #### --------------------------------------------------
 export default function App() {
@@ -313,12 +342,13 @@ export default function App() {
 
 
   return (
-    <>
+    <> 
+      <Loader />
       <Canvas
-        dpr={[1]} // lower resolution
+        dpr={[1]}
         onCreated={({ gl }) => {
-          gl.setPixelRatio(0.75) //  resolution
-        }} 
+          gl.setPixelRatio(0.75)
+        }}
         shadows
         style={{
           height: "100vh",
@@ -330,40 +360,41 @@ export default function App() {
           zIndex: 0,
         }}
         camera={{ position: [0, 0, 1.5], fov: 70 }}
-        gl={{ 
-          physicallyCorrectLights: true, 
-          toneMapping: THREE.ACESFilmicToneMapping, 
-          outputEncoding: THREE.sRGBEncoding 
+        gl={{
+          powerPreference: "high-performance",
+          physicallyCorrectLights: true,
+          toneMapping: THREE.ACESFilmicToneMapping,
+          outputColorSpace: THREE.SRGBColorSpace,
         }}
       >
         <AdaptiveDpr pixelated />
 
         {/* -------------------------------------------------- #### LIGHTING #### -------------------------------------------------- */}
-        <SceneLights/>
-
-
-        {/* -------------------------------------------------- #### HELPERS #### -------------------------------------------------- */}
-
-        <Helpers 
-          pointLightRef={pointLightRef} 
-          rightLampRef={rightLampRef} 
-          leftLampRef={leftLampRef} 
-        />
+        <SceneLights />
 
         {/* -------------------------------------------------- #### REALISM / ENVIRONMENT #### -------------------------------------------------- */}
-        <Environment preset="night" />
-        <DustParticles count={800} />
-        <Scene currentProject={currentProject} />
+        <Suspense fallback={null}>
+          <Environment preset="night" />
+          <DustParticles count={800} />
+          <Scene currentProject={currentProject} />
+          <Preload all />
+        </Suspense>
+
+        {/* -------------------------------------------------- #### CAMERA / CONTROLS #### -------------------------------------------------- */}
         <ScrollCamera />
-        <MouseParallax /> 
+        <MouseParallax />
 
         {/* -------------------------------------------------- #### POSTPROCESSING (CINEMATIC EFFECTS) #### -------------------------------------------------- */}
         <EffectComposer multisampling={0} resolutionScale={0.25}>
-          <Bloom intensity={2.1} luminanceThreshold={.2} luminanceSmoothing={0.1} />
-          {/* <SSAO radius={0.1} intensity={20} /> */}
-          {/* <DepthOfField focusDistance={0.02} focalLength={0.03} bokehScale={1.1} /> */}
+          <Bloom
+            intensity={2.1}
+            luminanceThreshold={0.2}
+            luminanceSmoothing={0.1}
+          />
         </EffectComposer>
       </Canvas>
+
+
 
       {/* -------------------------------------------------- #### SCROLL SECTIONS #### -------------------------------------------------- */}
       <div className="scroll-container">
@@ -415,7 +446,7 @@ export default function App() {
             <div 
               className="project-item"
               onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-              onMouseEnter={() => setCurrentProject("project1")}
+              onMouseEnter={() => setCurrentProject("portfolio")}
               onMouseLeave={() => setCurrentProject("default")}
               style={{ cursor: "pointer" }}  
             >
@@ -431,10 +462,10 @@ export default function App() {
               </div>
             </div>
 
-            <a href="https://drive.google.com/file/d/1Q4sOsHHvHX4kSAmTJYEDIb6T9_TpwgBL/view?usp=sharing" target="_blank" rel="noopener noreferrer">
+            <a href="https://colab.research.google.com/drive/1gnF13xNiBz43F6wCgNUZhtBByEB2IsbI?usp=sharing" target="_blank" rel="noopener noreferrer">
               <div 
                 className="project-item"
-                onMouseEnter={() => setCurrentProject("project1")}
+                onMouseEnter={() => setCurrentProject("music-genre-identifier")}
                 onMouseLeave={() => setCurrentProject("default")}
               >
                 <div className="project-left">
@@ -567,7 +598,13 @@ export default function App() {
             </h1>
           <div className="contact-card">
             <p className="contact-intro">
-              HI my name is Daniel  
+              I'm a student at the University of Alberta with a passion for software development and full-stack engineering. 
+            </p>
+            <p className="contact-intro">
+              I mainly work with <AnimatedText fontSize="1rem" color="pink" fontFamily="'Ubuntu', sans-serif">Python </AnimatedText> and <AnimatedText fontSize="1rem" color="pink" fontFamily="'Ubuntu', sans-serif">JavaScript</AnimatedText>, though I am  also experienced in <AnimatedText fontSize="1rem" color="pink" fontFamily="'Ubuntu', sans-serif">C, C++, Java, and Lua</AnimatedText>. I enjoy solving problems through code, building systems from the ground up, and collaborating with others to create impactful and well-designed software. My interests span from <AnimatedText fontSize="1rem" color="cyan" fontFamily="'Ubuntu', sans-serif">machine learning</AnimatedText> and <AnimatedText fontSize="1rem" color="cyan" fontFamily="'Ubuntu', sans-serif">web development</AnimatedText> to <AnimatedText fontSize="1rem" color="cyan" fontFamily="'Ubuntu', sans-serif">low-level programming</AnimatedText>,  giving me a versatile foundation to tackle challenges across different domains.
+            </p>
+            <p className="contact-intro">
+              Outside of coursework and coding, I like exploring <AnimatedText fontSize="1rem" color="blue" fontFamily="'Ubuntu', sans-serif">3D modeling, game development</AnimatedText>, and <AnimatedText fontSize="1rem" color="blue" fontFamily="'Ubuntu', sans-serif">procedural</AnimatedText> <AnimatedText fontSize="1rem" color="blue" fontFamily="'Ubuntu', sans-serif">animation</AnimatedText> as creative outlets. When I’m not coding, I’m usually sketching out game concepts, experimenting with design tools, or trying to convince myself that “just one more refactor” really means I’m done.  
             </p>
           </div>
           
@@ -575,8 +612,8 @@ export default function App() {
             <h2 className="skill-title">LET'S CONNECT!</h2>
 
             <div className="contact-info">
-              <p>📧 <a href="mailto:danjokuu@gmail.com">danjokuu@gmail.com</a></p>
-              <p>🌐 <a href="https://github.com" target="_blank">GitHub</a> | <a href="https://linkedin.com" target="_blank">LinkedIn</a></p>
+              <p>📧 <a href="mailto:danjokuu@gmail.com" rel="noopener noreferrer">danjokuu@gmail.com</a></p>
+              <p>🌐 <a href="https://github.com/danjokuuu" target="_blank">GitHub</a> | <a href="https://www.linkedin.com/in/daniel-njoku-4578172a1/" target="_blank" rel="noopener noreferrer">LinkedIn</a></p>
             </div>
           </div>
         </section>
@@ -586,12 +623,12 @@ export default function App() {
       <div className="sidebar-links">
         <ul>
           <li>
-            <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer">
+            <a href="https://www.linkedin.com/in/daniel-njoku-4578172a1/" target="_blank" rel="noopener noreferrer">
               <FaLinkedin style={{ marginRight: "8px" }} /> LinkedIn
             </a>
           </li>
           <li>
-            <a href="https://github.com" target="_blank" rel="noopener noreferrer">
+            <a href="https://github.com/danjokuuu" target="_blank" rel="noopener noreferrer">
               <FaGithub style={{ marginRight: "8px" }} /> GitHub
             </a>
           </li>
