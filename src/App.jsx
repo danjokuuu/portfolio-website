@@ -404,7 +404,7 @@ export default function App() {
           <div className="intro-content">
             <h1 className="intro-name"> 
               <FuzzyText
-                fontSize="clamp(3rem, 8vw, 8rem)"
+                fontSize="max(3rem, 8vw, 8rem)"
                 fontFamily="'Poppins', sans-serif"
                 fontWeight={900}
                 color="#000000"
@@ -416,7 +416,7 @@ export default function App() {
             </h1>
             <h2 className="intro-subtitle">
               <FuzzyText
-                fontSize="clamp(1.5rem, 4vw, 4rem)"
+                fontSize="max(1.5rem, 4vw, 4rem)"
                 fontFamily="'FigtreeExtraBoldItalic', sans-serif"
                 fontWeight={900}
                 color="#000000"

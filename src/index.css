@@ -120,6 +120,12 @@ body, html {
   }
 }
 
+.intro-name canvas,
+.intro-subtitle canvas {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
 
 /*---------------------------------------------------- #### project content #### ---------------------------------------------------- */
 .projects-section {
@@ -308,6 +314,19 @@ body, html {
   transform: translateX(-50%) translateY(-4px);
 }
 
+@media (max-width: 768px) {
+  .skill-card {
+    max-width: 85%;     
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .skill-card {
+    max-width: 85%;     
+    padding: 1rem;
+  }
+}
 
 /*---------------------------------------------------- #### text effect #### ---------------------------------------------------- */
 
@@ -458,7 +477,7 @@ body, html {
 .sidebar-links {
   position: fixed;
   top: 50%;
-  left: 1rem;
+  left: .5rem;
   transform: translateY(-50%);
   z-index: 1000; 
 }
