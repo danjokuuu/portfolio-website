@@ -65,7 +65,6 @@ function Scene({ currentProject }) {
 
           alphaMap: scanlineTex,   // overlay scanlines
           alphaTest: 0.2,         
-          combine: THREE.MixOperation
         })
         nodes.screen.material = materialRef.current
       } else {
@@ -83,12 +82,17 @@ function Scene({ currentProject }) {
     let video, videoTexture
     if (nodes.second_screen) {
       video = document.createElement("video")
-      video.src = "/videos/tv-static.mp4" // 
-      video.crossOrigin = "Anonymous"
+      video.src = "/videos/tv-static.mp4"
+      video.crossOrigin = "anonymous"
       video.loop = true
       video.muted = true
       video.playsInline = true
-      video.play()
+
+      const playPromise = video.play()
+      if (playPromise && typeof playPromise.catch === "function") {
+        playPromise.catch(() => {})
+      }
+
 
       videoTexture = new THREE.VideoTexture(video)
       videoTexture.colorSpace = THREE.SRGBColorSpace
@@ -404,7 +408,7 @@ export default function App() {
           <div className="intro-content">
             <h1 className="intro-name"> 
               <FuzzyText
-                fontSize="max(3rem, 8vw, 8rem)"
+                fontSize="clamp(3rem, 8vw, 8rem)"
                 fontFamily="'Poppins', sans-serif"
                 fontWeight={900}
                 color="#000000"
@@ -416,7 +420,7 @@ export default function App() {
             </h1>
             <h2 className="intro-subtitle">
               <FuzzyText
-                fontSize="max(1.5rem, 4vw, 4rem)"
+                fontSize="clamp(1.5rem, 4vw, 4rem)"
                 fontFamily="'FigtreeExtraBoldItalic', sans-serif"
                 fontWeight={900}
                 color="#000000"

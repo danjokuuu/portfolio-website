@@ -55,13 +55,15 @@ const FuzzyText = ({
         document.body.removeChild(temp);
       }
 
+      const fontPx = `${fontWeight} ${numericFontSize}px ${computedFontFamily}`;
+
       const text = React.Children.toArray(children).join('');
 
       const offscreen = document.createElement('canvas');
       const offCtx = offscreen.getContext('2d');
       if (!offCtx) return;
 
-      offCtx.font = `${fontWeight} ${fontSizeStr} ${computedFontFamily}`;
+      offCtx.font = fontPx;
       offCtx.textBaseline = 'alphabetic';
       const metrics = offCtx.measureText(text);
 
@@ -80,15 +82,19 @@ const FuzzyText = ({
       offscreen.height = tightHeight;
 
       const xOffset = extraWidthBuffer / 2;
-      offCtx.font = `${fontWeight} ${fontSizeStr} ${computedFontFamily}`;
+      offCtx.font = fontPx;
       offCtx.textBaseline = 'alphabetic';
       offCtx.fillStyle = color;
       offCtx.fillText(text, xOffset - actualLeft, actualAscent);
 
       const horizontalMargin = 50;
       const verticalMargin = 0;
-      canvas.width = offscreenWidth + horizontalMargin * 2;
-      canvas.height = tightHeight + verticalMargin * 2;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.style.width = `${offscreenWidth + horizontalMargin * 2}px`;
+      canvas.style.height = `${tightHeight + verticalMargin * 2}px`;
+      canvas.width = Math.round((offscreenWidth + horizontalMargin * 2) * dpr);
+      canvas.height = Math.round((tightHeight + verticalMargin * 2) * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.translate(horizontalMargin, verticalMargin);
 
       const interactiveLeft = horizontalMargin + xOffset;
@@ -130,11 +136,11 @@ const FuzzyText = ({
 
       const handleTouchMove = (e) => {
         if (!enableHover) return;
-        e.preventDefault();
+        if (e.cancelable) e.preventDefault();
         const rect = canvas.getBoundingClientRect();
         const touch = e.touches[0];
-        const x = touch.clientX - rect.left;
-        const y = touch.clientY - rect.top;
+        const x = (touch.clientX - rect.left) / scale;
+        const y = (touch.clientY - rect.top) / scale;
         isHovering = isInsideTextArea(x, y);
       };
 
@@ -164,12 +170,22 @@ const FuzzyText = ({
 
     init();
 
+    const handleResize = () => {
+      if (canvas && canvas.cleanupFuzzyText) canvas.cleanupFuzzyText();
+      init();
+    };
+
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
+
     return () => {
       isCancelled = true;
       window.cancelAnimationFrame(animationFrameId);
       if (canvas && canvas.cleanupFuzzyText) {
         canvas.cleanupFuzzyText();
       }
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
     };
   }, [children, fontSize, fontWeight, fontFamily, color, enableHover, baseIntensity, hoverIntensity]);
 
